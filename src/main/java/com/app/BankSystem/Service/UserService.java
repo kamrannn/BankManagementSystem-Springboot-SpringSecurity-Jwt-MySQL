@@ -2,7 +2,9 @@ package com.app.BankSystem.Service;
 
 import com.app.BankSystem.Model.Account;
 import com.app.BankSystem.Model.Card;
+import com.app.BankSystem.Model.Operation;
 import com.app.BankSystem.Model.User;
+import com.app.BankSystem.Repository.AccountRepository;
 import com.app.BankSystem.Repository.CardRepository;
 import com.app.BankSystem.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +16,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -21,13 +24,15 @@ import java.util.Optional;
 @Service
 public class UserService implements UserDetailsService {
     private final CardRepository cardRepository;
+    private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
     UserRepository userRepository;
 
     @Autowired
-    public UserService(UserRepository userRepository, CardRepository cardRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, CardRepository cardRepository, AccountRepository accountRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.cardRepository = cardRepository;
+        this.accountRepository = accountRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -53,6 +58,7 @@ public class UserService implements UserDetailsService {
                     card.setTotalAmount(100000.0);
                 }
             }
+            user.getAccount().setTotalAmount(900000.0);
             user.setPassword(passwordEncoder.encode(user.getPassword()));
             userRepository.save(user);
             return new ResponseEntity<>(user, HttpStatus.OK);
@@ -182,6 +188,35 @@ public class UserService implements UserDetailsService {
         }
     }
 
+    public ResponseEntity<Object> transferMoney(Operation operation, String username) {
+        User sender = userRepository.findByUsername(username);
+        Account account = accountRepository.findByIban(operation.getCreditorAccountId());
+        if (null != sender && account != null) {
+            if (operation.getAmount() < sender.getAccount().getTotalAmount()) {
+                if (sender.getCountry().equalsIgnoreCase(operation.getCountry())) {
+                    operation.setDateTime(LocalDateTime.now());
+                    sender.getAccount().setTotalAmount(sender.getAccount().getTotalAmount() - operation.getAmount());
+                    account.setTotalAmount(account.getTotalAmount() + operation.getAmount());
+                    operation.setDateTime(LocalDateTime.now());
+                    operation.setExchangeRateApplied(0.0);
+                    sender.getOperations().add(operation);
+                } else {
+                    operation.setExchangeRateApplied(150.0);
+                    sender.getAccount().setTotalAmount(sender.getAccount().getTotalAmount() - operation.getAmount());
+                    operation.setDateTime(LocalDateTime.now());
+                    sender.getOperations().add(operation);
+                    account.setTotalAmount(account.getTotalAmount() + operation.getAmount() * operation.getExchangeRateApplied());
+                }
+                accountRepository.save(account);
+                userRepository.save(sender);
+                return new ResponseEntity<>("The transaction is successfully done", HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>("You don't have sufficient balance to do this transaction", HttpStatus.OK);
+            }
+        } else {
+            return new ResponseEntity<>("Sender doesn't exists", HttpStatus.OK);
+        }
+    }
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
