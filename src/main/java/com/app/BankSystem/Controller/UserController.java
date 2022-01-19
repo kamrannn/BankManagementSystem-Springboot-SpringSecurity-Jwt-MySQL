@@ -17,7 +17,7 @@ public class UserController {
     }
 
     @GetMapping("/list")
-    public ResponseEntity<Object> list() {
+    public ResponseEntity<Object> list(@RequestHeader(name = "Authorization") String token) {
         return userService.listAllUsers();
     }
 
