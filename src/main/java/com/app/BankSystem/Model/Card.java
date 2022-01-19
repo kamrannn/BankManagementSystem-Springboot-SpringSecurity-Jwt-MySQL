@@ -4,10 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 @Data
@@ -17,11 +17,12 @@ import javax.validation.constraints.NotNull;
 @Table(name = "cards")
 public class Card {
     @Id
+    @Column(unique = true)
     private String number;
     @NotNull
-    private Long secretCode;
+    private Integer secretCode;
     @NotNull
-    private Long cryptogram;
+    private Integer cryptogram;
     private Boolean isBlocked;
     @NotNull
     private Double monthlyThreshold;

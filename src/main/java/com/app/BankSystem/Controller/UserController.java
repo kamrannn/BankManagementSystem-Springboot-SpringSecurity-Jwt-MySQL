@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/users")
 public class UserController {
-    UserService userService;
+    private final UserService userService;
 
     @Autowired
     public UserController(UserService userService) {
@@ -26,7 +26,7 @@ public class UserController {
         return userService.createUser(user);
     }
 
-    @PostMapping("/update")
+    @PutMapping("/update")
     public ResponseEntity<Object> update(@RequestBody User user) {
         return userService.updateUser(user);
     }
@@ -34,5 +34,25 @@ public class UserController {
     @DeleteMapping("/delete")
     public ResponseEntity<Object> delete(@RequestParam("id") String userId) {
         return userService.deleteUser(userId);
+    }
+
+    @GetMapping("{userId}/account")
+    public ResponseEntity<Object> getAccountByUserId(@PathVariable("userId") String userId) {
+        return userService.getAccountById(userId);
+    }
+
+    @GetMapping("/{userId}/accounts/balance")
+    public ResponseEntity<Object> getAccountBalance(@PathVariable("userId") String userId) {
+        return userService.getAccountBalance(userId);
+    }
+
+    @GetMapping("{userId}/cards")
+    public ResponseEntity<Object> getCardsByUserId(@PathVariable("userId") String userId) {
+        return userService.getCardsByUserId(userId);
+    }
+
+    @GetMapping("{userId}/cards/{cardNumber}")
+    public ResponseEntity<Object> getCardsByUserId(@PathVariable("userId") String userId, @PathVariable("cardNumber") String cardNumber) {
+        return userService.getSpecificCardByUserId(userId, cardNumber);
     }
 }
